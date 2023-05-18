@@ -1,0 +1,17 @@
+{
+    "org_id":"",
+    "taxonomy_id":"",
+    "field_id":"",
+    "field_name":"",
+    "field_dbname": "",
+    "is_required":"",
+    "localization_required":"",
+    "field_type":"",
+    "validation_id":{
+        "min_value":"",
+        "max_value":"",
+        "multiple_values":""
+    },
+    "created_at":"",
+    "created_by":""
+}
