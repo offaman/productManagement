@@ -181,7 +181,7 @@ def add_user_to_organisation(request):
 def create_new_field(request):
     requestBody = JSONParser().parse(request)
     organization_id = request.GET['org_id']
-    taxonomy_id = requestBody['taxonomy_id']
+    # taxonomy_id = requestBody['taxonomy_id']
 
     client = pymongo.MongoClient('mongodb://localhost:27017')
     mydb = client[f'{organization_id}_pxm_database']
@@ -212,7 +212,7 @@ def create_new_field(request):
 
             # create a relation b/w fields and taxonomies
             field_association_collection = mydb['Fields_associated']
-            field_association_collection.insert_one({'taxonomy_id':taxonomy_id, 'field_id':field_unique_id})
+            field_association_collection.insert_one({'field_id':field_unique_id})
 
             response_message['message'] = 'Property created successfully'
             response_message['status'] = 'Ok'
