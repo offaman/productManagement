@@ -7,5 +7,5 @@ build/
 *.sqlite3
 
 **/migrations/**
-!**/migrations
-!**/migrations/__init__.py
+**/migrations
+**/migrations/__init__.py
