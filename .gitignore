@@ -1,4 +1,11 @@
-migrations/
-**/__pycache__/*
 __pycache__/
-**/migrations/*
+
+env/
+build/
+
+
+*.sqlite3
+
+**/migrations/**
+!**/migrations
+!**/migrations/__init__.py
