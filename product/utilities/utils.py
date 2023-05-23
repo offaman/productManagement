@@ -48,10 +48,10 @@ def isListOfStrings(object):
 
 
 def validateMinValue(value, minValue):
-    return value >= minValue
+    return value > minValue
 
 def validateMaxValue(value, maxValue):
-    return value <= maxValue
+    return value < maxValue
 
 
 def validateMinStringLength(value, minValue):

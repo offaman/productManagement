@@ -13,65 +13,75 @@ COLLECTION_PER_ORG = ['Properties', 'Taxonomies', 'Validation', 'Fields_associat
 response_message = {}
 
 def create_admin_user(request):
-    requestBody  = JSONParser().parse(request)
-    user_name = requestBody['user_name']
-    user_email = requestBody['email_id']
-    user_password = requestBody['password']
-    newSuperUser = Super_user(user_name = user_name, user_email = user_email, password = user_password)
-    newSuperUser.save()
+    try:
+        requestBody  = JSONParser().parse(request)
+        user_name = requestBody['user_name']
+        user_email = requestBody['email_id']
+        user_password = requestBody['password']
+        newSuperUser = Super_user(user_name = user_name, user_email = user_email, password = user_password)
+        newSuperUser.save()
 
-    response_message['message'] = 'Admin user created successfully'
-    response_message['status'] = 'Ok'
+        response_message['message'] = 'Admin user created successfully'
+        response_message['status'] = 'Ok'
 
-    return JsonResponse( response_message,status=200)
+        return JsonResponse( response_message,status=200)
+    except Exception:
+        return JsonResponse({"Some exception occured":Exception})
 
 
 def create_organization(request):
-    requestBody  = JSONParser().parse(request)
-    # create organization with specified name
-    org_unique_id = str(uuid.uuid4())
-    organization_added = Organization(organization_id = org_unique_id, organization_name = requestBody['organization_name'], create_by = requestBody['creator'])
-    organization_added.save()
+    try:
+        requestBody  = JSONParser().parse(request)
+        # create organization with specified name
+        org_unique_id = str(uuid.uuid4())
+        organization_added = Organization(organization_id = org_unique_id, organization_name = requestBody['organization_name'], create_by = requestBody['creator'])
+        organization_added.save()
 
-    # create a new collection with recent added org_id_pxm_database and create diff collection into it.
-    client = pymongo.MongoClient('mongodb://localhost:27017')
-    mydb = client[f'{org_unique_id}_pxm_database']
-    for collection in COLLECTION_PER_ORG:
-        mydb.create_collection(collection)
+        # create a new collection with recent added org_id_pxm_database and create diff collection into it.
+        client = pymongo.MongoClient('mongodb://localhost:27017')
+        mydb = client[f'{org_unique_id}_pxm_database']
+        for collection in COLLECTION_PER_ORG:
+            mydb.create_collection(collection)
 
-    response_message['message'] = 'Organization created successfully'
-    response_message['status'] = 'Ok'
+        response_message['message'] = 'Organization created successfully'
+        response_message['status'] = 'Ok'
 
-    return JsonResponse(response_message, status=200)
+        return JsonResponse(response_message, status=200)
+    except:
+        return JsonResponse({"Exception":"Some exception occured"})
 
 
 def taxonomies(request):
 
-    requestBody  = JSONParser().parse(request)
-    organization_id = requestBody['organization_id']
+    try:
 
-    client = pymongo.MongoClient('mongodb://localhost:27017')
-    mydb = client[f'{organization_id}_pxm_database']
-    taxonomy_collection = mydb['Taxonomies']
+        requestBody  = JSONParser().parse(request)
+        organization_id = requestBody['organization_id']
 
-    if request.method == 'POST':
-    
-        requestBody['taxonomy_id']= str(uuid.uuid4())
-        taxonomy_collection.insert_one(requestBody)
+        client = pymongo.MongoClient('mongodb://localhost:27017')
+        mydb = client[f'{organization_id}_pxm_database']
+        taxonomy_collection = mydb['Taxonomies']
 
-        mydb.create_collection(requestBody['taxonomy_name'])
+        if request.method == 'POST':
+        
+            requestBody['taxonomy_id']= str(uuid.uuid4())
+            taxonomy_collection.insert_one(requestBody)
 
-        response_message['message'] = 'Taxonomy user created successfully'
-        response_message['status'] = 'Ok'
+            mydb.create_collection(requestBody['taxonomy_name'])
 
-    elif request.method == 'DELETE':
-        taxonomy_id = requestBody['taxonomy_id']
-        taxonomy_collection.delete_one({'taxonomy_id':taxonomy_id})
+            response_message['message'] = 'Taxonomy created successfully'
+            response_message['status'] = 'Ok'
 
-        response_message['message'] = 'Taxonomy deleted successfully'
-        response_message['status'] = 'Ok'
-       
-    return JsonResponse(response_message, status = 200)
+        elif request.method == 'DELETE':
+            taxonomy_id = requestBody['taxonomy_id']
+            taxonomy_collection.delete_one({'taxonomy_id':taxonomy_id})
+
+            response_message['message'] = 'Taxonomy deleted successfully'
+            response_message['status'] = 'Ok'
+        
+        return JsonResponse(response_message, status = 200)
+    except:
+        return JsonResponse({"Exception":"Some exception occured...Please try again"})
 
 
 def add_taxonomy_records(request):
@@ -96,14 +106,14 @@ def add_taxonomy_records(request):
 
             record_id = request.GET['record_id']
             validateInputTaxonomyData(requestBody['data'], all_properties)
-            mydb[my_taxonomy_collection_name['taxonomy_name']].update_one({'id':record_id},{'$set':requestBody['data']})
+            mydb[my_taxonomy_collection_name['taxonomy_name']].update_one({'record_id':record_id},{'$set':requestBody['data']})
 
             response_message['message'] = 'Data updated successfully'
             response_message['status'] = 'Ok'          
         else:
             validateInputTaxonomyData(requestBody['data'], all_properties)
             #replace id with record_id 
-            requestBody['data']['id'] = str(uuid.uuid4())
+            requestBody['data']['record_id'] = str(uuid.uuid4())
             # insert record of validation passed
             mydb[my_taxonomy_collection_name['taxonomy_name']].insert_one(requestBody['data'])
 
@@ -120,14 +130,14 @@ def delete_taxonomy_records(request):
 
     taxonomy_id = requestBody['taxonomy_id']
     organization_id = requestBody['organization_id']
-    record_id = requestBody['id']
+    record_id = requestBody['record_id']
 
     client = pymongo.MongoClient('mongodb://localhost:27017')
     mydb = client[f'{organization_id}_pxm_database']
 
     my_taxonomy_collection_name = mydb['Taxonomies'].find_one({'taxonomy_id':taxonomy_id},{'taxonomy_name':1,'_id':0})
 
-    mydb[my_taxonomy_collection_name['taxonomy_name']].delete_one({'id':record_id})
+    mydb[my_taxonomy_collection_name['taxonomy_name']].delete_one({'record_id':record_id})
 
 
     response_message['message'] = 'Data deleted successfully'
@@ -148,7 +158,7 @@ def get_records_by_taxonomy(request):
     my_taxonomy_collection_name = mydb['Taxonomies'].find_one({'taxonomy_id':taxonomy_id},{'taxonomy_name':1,'_id':0})
 
     # get all record from that taxonomy
-    taxonomy_records =  list(mydb[my_taxonomy_collection_name['taxonomy_name']].find({},{'_id':0, 'id':0}))
+    taxonomy_records =  list(mydb[my_taxonomy_collection_name['taxonomy_name']].find({},{'_id':0, 'record_id':0}))
 
     return JsonResponse(taxonomy_records, safe=False, status = 200)
 
@@ -261,7 +271,6 @@ def get_all_field_by_taxonomy(request):
 
     property_group_mapped_fields = {}
 
-
     for p_group in property_group_list:
         property_group_mapped_fields[f"{p_group}"] = []
         for field in all_associated_fields:
@@ -281,15 +290,12 @@ def dis_associate_field_from_taxonomy(request):
 
     field_association_collection = mydb['Fields_associated']
 
-    print(field_association_collection.find_one({'field_id':field_id, 'taxonomy_id':taxonomy_id}))
-
     field_association_collection.delete_one({'field_id':field_id, 'taxonomy_id':taxonomy_id})
 
     response_message['message'] = 'Field removed successfully from taxonomy'
     response_message['status'] = 'Ok'
 
     return JsonResponse(response_message, status=200)
-
 
 def associate_field_to_taxonomy(request):
 
