@@ -11,3 +11,4 @@ build/
 **/migrations/__init__.py
 
 
+*.json
