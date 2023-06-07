@@ -25,8 +25,33 @@ SECRET_KEY = '_r90q$jc2y5zs_o#()m9zxkhl=xk3)%i%b%&l3&sq*vwai-vb@'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+CORS_ALLOWED_ORIGINS = [ "http://localhost:3000","http://127.0.0.1:3000"]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "cache-control",
+    "pragma",
+]
 
 # Application definition
 
@@ -37,17 +62,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'product'
+    'product',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware", 
 ]
 
 ROOT_URLCONF = 'productManagement.urls'
@@ -88,7 +115,6 @@ DATABASES = {
         'NAME': 'django-test-db',
     }
 }
-
 
 
 # Password validation

@@ -3,6 +3,7 @@ from . import views
 
 
 # # pymongo urls
+
 # urlpatterns = [
 #     path('addfields',views.create_new_field, name = 'newfield'),
 #     path('taxonomy',views.taxonomies, name = 'taxonomy'),
@@ -20,12 +21,27 @@ from . import views
 #     path('allfields', views.get_all_properties, name = 'getallfields')
 # ]
 
+
+# urlpatterns = [
+#     path('fields',views1.fields, name = 'newfield'),
+#     path('taxonomies',views1.taxonomies, name = 'taxonomy'),
+#     path('organizations', views1.create_organization, name = 'new_org'),
+#     path('records', views1.taxonomy_records, name = 'taxnomy_records'),
+#     path('taxonomy-fields', views1.get_all_field_by_taxonomy, name = 'taxonomy_fields'),
+#     path("property-groups", views1.property_groups, name = 'property_group'),
+#     path('associatefields', views1.associate_field_to_taxonomy, name = 'associatefieldwithtaxonomy'),
+# ]
+
+
 urlpatterns = [
-    path('fields',views.fields, name = 'newfield'),
-    path('taxonomies',views.taxonomies, name = 'taxonomy'),
-    path('organizations', views.create_organization, name = 'new_org'),
-    path('records', views.taxonomy_records, name = 'taxnomy_records'),
-    path('taxonomy-fields', views.get_all_field_by_taxonomy, name = 'taxonomy_fields'),
-    path("property-groups", views.property_groups, name = 'property_group'),
-    path('associatefields', views.associate_field_to_taxonomy, name = 'associatefieldwithtaxonomy'),
+    path('organizations', views.Organization.as_view(), name = 'organizations'),
+    path('taxonomies', views.Taxonomies.as_view(), name = 'taxonomies'),
+    path('fields', views.Fields.as_view(), name = 'fields'),
+    path('taxonomy-records', views.Taxonomy_records.as_view(), name = 'taxonomy-records'),
+    path('property-groups', views.Property_groups.as_view(), name = 'property-groups'),
+    path('associate-field', views.Fields_association.as_view(),name = 'field-association'),
+    path('records', views.All_records.as_view(), name = 'all-records'),
+    path('findrecord', views.Search.as_view()),
+    path('taxonomy-fields',views.Fields_by_taxonomy.as_view()),
+    path('test/<slug:org_id>', views.Test_view.as_view())
 ]

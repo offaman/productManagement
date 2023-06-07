@@ -10,5 +10,7 @@ build/
 **/migrations
 **/migrations/__init__.py
 
+views1.py
+
 
 *.json

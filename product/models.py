@@ -3,7 +3,7 @@ import uuid
 from django.utils import timezone
 
 
-class Organization(models.Model):
+class Organisation(models.Model):
     organization_id = models.CharField(default=uuid.uuid4, primary_key=True, max_length=100)
     organization_name = models.CharField(max_length= 300)
     created_at = models.TimeField(default= timezone.localtime())

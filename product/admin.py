@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import  Organization,Super_user
+from .models import  Organisation,Super_user
 
 # Register your models here.
-admin.site.register([Organization, Super_user])
+admin.site.register([Organisation, Super_user])
