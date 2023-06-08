@@ -11,8 +11,9 @@ from django.views import View
 from .pagination import paginate
 import math
 
+
 COLLECTION_PER_ORG = ['Properties', 'Taxonomies', 'Validation', 'Fields_associated', 'Property_groups', 'Records']
-RECORDS_PER_PAGE = 3
+RECORDS_PER_PAGE = 4
 
 
 class Organization(View):
@@ -57,7 +58,7 @@ class Taxonomies(View):
             client.close()
             return JsonResponse(all_taxonomies,safe=False ,status = 200)
         # self.response_message['data'] = all_taxonomies
-        
+
         # for taxonomy in list(all_taxonomies):
         #     # taxonomy_list.append(taxonomy['taxonomy_name'])
         #     taxonomies_list_object[taxonomy['taxonomy_name']] = taxonomy['taxonomy_id']
@@ -282,11 +283,13 @@ class Taxonomy_records(View):
             total_records = mydb[my_taxonomy_collection_name['taxonomy_name']].find().count()
             paginated_Urls_object = paginate(organization_id, page_number, RECORDS_PER_PAGE, total_records, baseURL, taxonomy_id)
             self.response_message['meta_data'] = {}
+            self.response_message['meta_data']['total_records'] = total_records
             self.response_message['meta_data']['previous_page'] =  paginated_Urls_object['previous_page']
             self.response_message['meta_data']['next_page'] =  paginated_Urls_object['next_page']
             self.response_message['meta_data']['total_pages'] = math.ceil(total_records/RECORDS_PER_PAGE)
             self.response_message['meta_data']['records_per_page'] = RECORDS_PER_PAGE
             self.response_message['meta_data']['from_record_number'] = records_to_skip + 1
+            self.response_message['meta_data']['current_page'] = page_number
             if records_to_skip + RECORDS_PER_PAGE > total_records:
                 self.response_message['meta_data']['to_record_number'] = total_records
             else:
@@ -546,15 +549,18 @@ class All_records(View):
             records_to_fetch  = list(mydb['Records'].find({},{'_id':0}).skip(records_to_skip).limit(RECORDS_PER_PAGE))
             records_to_send  = []
             baseURL = "http://172.16.3.214:8000/records?org_id={org_id}&page={page_index}"
-
+            
 
             paginated_Urls_object = paginate(organization_id,page_number,RECORDS_PER_PAGE,total_records, baseURL)
             self.response_message['meta_data'] = {}
+            self.response_message['meta_data']['total_records'] = total_records
             self.response_message['meta_data']['previous_page'] =  paginated_Urls_object['previous_page']
             self.response_message['meta_data']['next_page'] =  paginated_Urls_object['next_page']
             self.response_message['meta_data']['total_pages'] = math.ceil(total_records/RECORDS_PER_PAGE)
             self.response_message['meta_data']['records_per_page'] = RECORDS_PER_PAGE
             self.response_message['meta_data']['from_record_number'] = records_to_skip + 1
+            self.response_message['meta_data']['current_page'] = page_number
+            
             if records_to_skip + RECORDS_PER_PAGE > total_records:
                 self.response_message['meta_data']['to_record_number'] = total_records
             else:
@@ -607,56 +613,85 @@ class All_records(View):
         return HttpResponse(status= 200)
 
 class Search(View):
+    response_message = {}
     def get(self, request):
         organization_id = request.GET['org_id']
         page_number = int(request.GET.get('page',1))
         requestBody = JSONParser().parse(request)
         client = pymongo.MongoClient('mongodb://localhost:27017')
         mydb = client[f'{organization_id}_pxm_database']
-        records_to_skip = page_number-1
+        if page_number <= 0:
+            page_number = 1
+
+        records_to_skip = (page_number-1)*RECORDS_PER_PAGE
 
         if request.GET.get('t_id',None):
             taxonomy_id = request.GET['t_id']
             my_taxonomy = mydb['Taxonomies'].find_one({'taxonomy_id':taxonomy_id},{'_id':0, 'taxonomy_name':1})
-            
+
+            total_records = mydb[my_taxonomy['taxonomy_name']].find({'record_id':{'$regex' : f'^{requestBody["text_to_search"]}.*'}},{'_id':0}).count()
+
+            baseURL = "http://127.0.0.1:8000/search?org_id={org_id}&t_id={taxonomy_id}&page={page_index}"
+
             matched_records = list(mydb[my_taxonomy['taxonomy_name']].find({'record_id':{'$regex' : f'^{requestBody["text_to_search"]}.*'}},{'_id':0}).skip(records_to_skip).limit(RECORDS_PER_PAGE))
+
+            paginated_Urls_object = paginate(organization_id,page_number, RECORDS_PER_PAGE, total_records, baseURL, taxonomy_id)
+            self.response_message['meta_data'] = {}
+            self.response_message['meta_data']['previous_page'] =  paginated_Urls_object['previous_page']
+            self.response_message['meta_data']['next_page'] =  paginated_Urls_object['next_page']
+            self.response_message['meta_data']['total_pages'] = math.ceil(total_records/RECORDS_PER_PAGE)
+            self.response_message['meta_data']['records_per_page'] = RECORDS_PER_PAGE
+            self.response_message['meta_data']['from_record_number'] = records_to_skip + 1
+            if records_to_skip + RECORDS_PER_PAGE > total_records:
+                self.response_message['meta_data']['to_record_number'] = total_records
+            else:
+                self.response_message['meta_data']['to_record_number'] = records_to_skip + RECORDS_PER_PAGE
+            self.response_message['data'] = matched_records
             client.close()
-            return JsonResponse(matched_records, safe=False)
+            return JsonResponse(self.response_message, safe=False)
         
         else:
-            my_taxonomy_collection_names = list(mydb['Taxonomies'].find({},{'_id':0, 'taxonomy_name':1}))
-            all_taxonomy_names = []
-            for taxonomy in my_taxonomy_collection_names:
-                all_taxonomy_names.append(taxonomy['taxonomy_name'])
-            matched_taxonomy_records = []
 
-            for taxonomy in all_taxonomy_names:
-                records = list(mydb[taxonomy].find({},{'_id':0}).skip(records_to_skip).limit(RECORDS_PER_PAGE))
-                [matched_taxonomy_records.append(record) for record in records]
+            baseURL = "http://127.0.0.1:8000/findrecord?org_id={org_id}&page={page_index}"
+            all_matched_records = list(mydb['Records'].find({'record_id':{'$regex' : f'^{requestBody["text_to_search"]}.*'}},{'_id':0}).skip(records_to_skip).limit(RECORDS_PER_PAGE))
+            total_records = mydb['Records'].find({'record_id':{'$regex' : f'^{requestBody["text_to_search"]}.*'}}).count()
+            paginated_Urls_object = paginate(organization_id,page_number, RECORDS_PER_PAGE, total_records, baseURL, taxonomy_id=None)
+            self.response_message['meta_data'] = {}
+            self.response_message['meta_data']['previous_page'] =  paginated_Urls_object['previous_page']
+            self.response_message['meta_data']['next_page'] =  paginated_Urls_object['next_page']
+            self.response_message['meta_data']['total_pages'] = math.ceil(total_records/RECORDS_PER_PAGE)
+            self.response_message['meta_data']['records_per_page'] = RECORDS_PER_PAGE
 
-                if len(matched_taxonomy_records) == RECORDS_PER_PAGE:
-                    client.close()
-                    matched_taxonomy_records = matched_taxonomy_records[records_to_skip: records_to_skip + RECORDS_PER_PAGE]
+            self.response_message['meta_data']['from_record_number'] = records_to_skip + 1
+            if records_to_skip + RECORDS_PER_PAGE > total_records:
+                self.response_message['meta_data']['to_record_number'] = total_records
+            else:
+                self.response_message['meta_data']['to_record_number'] = records_to_skip + RECORDS_PER_PAGE
+            self.response_message['data'] = all_matched_records
+
+            # matched_taxonomy_names = []
+            # for record in all_matched_records:
+            #     matched_taxonomy = mydb[record['taxonomy_id']].find_one({'record_id':record['record_id']})
+            #     matched_taxonomy_names.append(matched_taxonomy)
+
+            return JsonResponse(self.response_message, safe=False)
+        
+            # my_taxonomy_collection_names = list(mydb['Taxonomies'].find({},{'_id':0, 'taxonomy_name':1}))
+            # all_taxonomy_names = []
+            # for taxonomy in my_taxonomy_collection_names:
+            #     all_taxonomy_names.append(taxonomy['taxonomy_name'])
+            # matched_taxonomy_records = []
+
+            # for taxonomy in all_taxonomy_names:
+            #     records = list(mydb[taxonomy].find({},{'_id':0}).skip(records_to_skip).limit(RECORDS_PER_PAGE))
+            #     [matched_taxonomy_records.append(record) for record in records]
+
+            #     if len(matched_taxonomy_records) == RECORDS_PER_PAGE:
+            #         client.close()
+            #         matched_taxonomy_records = matched_taxonomy_records[records_to_skip: records_to_skip + RECORDS_PER_PAGE]
             
-            client.close()
-            return JsonResponse(matched_taxonomy_records, safe=False, status = 200)
-
-
-class Test_view(View):
-    response_message = {}
-    def get(self, request, *args , **kwargs):
-        organization_id = self.kwargs['org_id']
-        client = pymongo.MongoClient('mongodb://localhost:27017')
-        mydb = client[f'{organization_id}_pxm_database']
-
-        all_taxonomies = list(mydb['Taxonomies'].find({},{'_id':0}))
-
-        # self.response_message['data'] = all_taxonomies
-        # for taxonomy in list(all_taxonomies):
-        #     # taxonomy_list.append(taxonomy['taxonomy_name'])
-        #     taxonomies_list_object[taxonomy['taxonomy_name']] = taxonomy['taxonomy_id']
-        client.close()
-        return JsonResponse(all_taxonomies,safe=False ,status = 200)
+            # client.close()
+            # return JsonResponse(matched_taxonomy_records, safe=False, status = 200)
     
 class Fields_by_taxonomy(View):
         response_message = {}

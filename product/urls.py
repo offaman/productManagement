@@ -43,5 +43,5 @@ urlpatterns = [
     path('records', views.All_records.as_view(), name = 'all-records'),
     path('findrecord', views.Search.as_view()),
     path('taxonomy-fields',views.Fields_by_taxonomy.as_view()),
-    path('test/<slug:org_id>', views.Test_view.as_view())
+    # path('test/<slug:org_id>', views.Test_view.as_view())
 ]
